@@ -296,7 +296,6 @@ class x_screen_1App(App):
     APP_COLOR_SET = 0
     APP_TITLE_IMG = 'Tulips.jpg'
     APP_TXT = 'details.txt'
-    APP_Bottom_BAR_H = 50
 
     def build(self):
         return Manager()
