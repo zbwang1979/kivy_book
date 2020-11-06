@@ -45,25 +45,24 @@ class Fetching_title(threading.Thread):
 
 
 class Fetching_txt(threading.Thread):
-    def __init__(self, screen: 'ScreenTwo',  container:'Page_container',start_line_num=0,is_mix=0):
+    def __init__(self, screen: 'ScreenTwo', container: 'Page_container', start_line_num=0, is_mix=0):
         super(Fetching_txt, self).__init__()
         self.is_mix = is_mix
         self.screen = screen
         self.start_line_num = start_line_num
-        self.page_container=container
-
-
+        self.page_container = container
 
     def run(self):
         # Logger.debug(self.screen.screen_container.size)
-        check_height=self.screen.page.size[1]
-        new_item=Page_label() if self.is_mix==0 else Txt_Img()
-        current_line_num=0
+        check_height = self.screen.page.size[1]
+        new_item = Page_label() if self.is_mix == 0 else Txt_Img()
+        current_line_num = 0
         self.page_container.add_widget(new_item)
         self.screen.ready_enent.set()
-        def _test(inst,vlu):
+
+        def _test(inst, vlu):
             Logger.debug(f'readed label height change to {vlu}')
-            if vlu[1]>self.screen.page.size[1]-100:
+            if vlu[1] > self.screen.page.size[1] - 100:
                 # Clock.schedule_once(lambda dt:self.screen.messager1.display_message(self.screen.messager2.pos, f'载入{len(self.screen.page_list)}页f', timeout=0),
                 #                     0)
 
@@ -72,7 +71,7 @@ class Fetching_txt(threading.Thread):
 
             self.screen.ready_enent.set()
 
-        new_item.bind(texture_size=(lambda int,vlu:_test(int,vlu)))
+        new_item.bind(texture_size=(lambda int, vlu: _test(int, vlu)))
 
         with open(self.screen.f_path) as f:
             for line in f:
@@ -80,17 +79,16 @@ class Fetching_txt(threading.Thread):
                     Logger.debug(f'fetching txt stop')
 
                     return
-                current_line_num+=1
+                current_line_num += 1
                 self.screen.ready_enent.wait()
                 self.screen.ready_enent.clear()
-                if current_line_num<=self.start_line_num:
+                if current_line_num <= self.start_line_num:
                     self.screen.ready_enent.set()
                     continue
                 if not bool(line.rsplit()):
                     self.screen.ready_enent.set()
                     continue
-                self.screen.page_add_label(self.page_container,new_item,line)
-
+                self.screen.page_add_label(self.page_container, new_item, line)
 
         pass
 
@@ -150,14 +148,15 @@ class Items_Layout(GridLayout):
 
 
 class Popup_message(Label):
-    bg_alhpa=NumericProperty(0)
-    def __init__(self,**kwargs):
-        super(Popup_message,self).__init__(**kwargs)
+    bg_alhpa = NumericProperty(0)
 
-    def display_message(self, start_pos,message_txt='messager txt', timeout=2):
+    def __init__(self, **kwargs):
+        super(Popup_message, self).__init__(**kwargs)
+
+    def display_message(self, start_pos, message_txt='messager txt', timeout=2):
         self.text = message_txt
-        self.pos=start_pos
-        target_pos=-self.texture_size[0]-start_pos[0],self.pos[1]
+        self.pos = start_pos
+        target_pos = -self.texture_size[0] - start_pos[0], self.pos[1]
         # def _update_x(ins,vlu):
         #     ins.text_size[0]=abs(vlu[0]-start_pos[0])
         #     Logger.debug(f'start from {start_pos} Now pos {vlu[0]}')
@@ -170,19 +169,19 @@ class Popup_message(Label):
         # self.bind(pos=)
         self.opacity = 1
         self.disabled = False
+
         def _lamb(dt):
             Logger.debug(f'message texture size{self.texture_size}')
-            _x=-(self.width/2+self.texture_size[0]/2) if self.texture_size[0]<self.width else -self.texture_size[0]
-            anim = Animation(x=_x, y=self.pos[1],duration=2)
-            anim.repeat=True
+            _x = -(self.width / 2 + self.texture_size[0] / 2) if self.texture_size[0] < self.width else - \
+            self.texture_size[0]
+            anim = Animation(x=_x, y=self.pos[1], duration=2)
+            anim.bind(on_complete=lambda ins,wid: ins.start(wid))
             anim.start(self)
-        Clock.schedule_once(_lamb,-1)
 
-
+        Clock.schedule_once(_lamb, -1)
 
         if bool(timeout):
             Clock.schedule_once(lambda dt: self.hide(), timeout)
-
 
     def hide(self):
         self.opacity = 0
@@ -191,24 +190,25 @@ class Popup_message(Label):
 
 class Page_container(BoxLayout):
     spacing = 0
-    padding = 0,0,0,0
+    padding = 0, 0, 0, 0
     pass
 
 
 class Page_label(Label):
     pass
 
+
 class ScreenTwo(Screen):
     f_path = StringProperty('')
     messager1 = ObjectProperty(None)
-    messager2=ObjectProperty(None)
+    messager2 = ObjectProperty(None)
 
-    page=ObjectProperty(None)
+    page = ObjectProperty(None)
 
     def __init__(self, **kwargs):
         super(ScreenTwo, self).__init__(**kwargs)
         self.stop_reading_event = threading.Event()
-        self.ready_enent=threading.Event()
+        self.ready_enent = threading.Event()
         self.page_list = []
         pass
 
@@ -226,24 +226,23 @@ class ScreenTwo(Screen):
             # self.screen_container.add_widget(_p)
         if bool(self.page_list):
             self.page_list.clear()
-        new_page=Page_container()
+        new_page = Page_container()
         self.page.add_widget(new_page)
         self.page_list.append(new_page)
-        Fetching_txt(self,new_page).start()
+        Fetching_txt(self, new_page).start()
         # Clock.schedule_once(partial(_p.test,self.screen_container), -1)
         # Clock.schedule_once(lambda dt: _t.start(), 1)
         pass
 
     @mainthread
-    def page_add_label(self, container:'Page_container',current_label: 'Page_label', new_txt: str,new_lnum:int=0):
-        current_label.text+=new_txt
+    def page_add_label(self, container: 'Page_container', current_label: 'Page_label', new_txt: str, new_lnum: int = 0):
+        current_label.text += new_txt
 
         self.ready_enent.clear()
 
         # def _aaa():
         #     self.ready_enent.set()
         # Clock.schedule_once(lambda dt: _aaa(), -1)
-
 
         pass
 
