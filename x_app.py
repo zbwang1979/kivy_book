@@ -66,7 +66,7 @@ class Fetching_txt(threading.Thread):
                 # Clock.schedule_once(lambda dt:self.screen.messager1.display_message(self.screen.messager2.pos, f'载入{len(self.screen.page_list)}页f', timeout=0),
                 #                     0)
 
-                self.screen.messager1.display_message(self.screen.messager2.pos, f'载入中...', timeout=0)
+                self.screen.messager1.loop_message(self.screen.messager2.pos, f'载入中...', timeout=0)
                 return
 
             self.screen.ready_enent.set()
@@ -153,10 +153,9 @@ class Popup_message(Label):
     def __init__(self, **kwargs):
         super(Popup_message, self).__init__(**kwargs)
 
-    def display_message(self, start_pos, message_txt='messager txt', timeout=2):
+    def loop_message(self, start_pos, message_txt='messager txt', timeout=2):
         self.text = message_txt
         self.pos = start_pos
-        target_pos = -self.texture_size[0] - start_pos[0], self.pos[1]
         # def _update_x(ins,vlu):
         #     ins.text_size[0]=abs(vlu[0]-start_pos[0])
         #     Logger.debug(f'start from {start_pos} Now pos {vlu[0]}')
@@ -175,7 +174,11 @@ class Popup_message(Label):
             _x = -(self.width / 2 + self.texture_size[0] / 2) if self.texture_size[0] < self.width else - \
             self.texture_size[0]
             anim = Animation(x=_x, y=self.pos[1], duration=2)
-            anim.bind(on_complete=lambda ins,wid: ins.start(wid))
+            def _lamb2(ins,wid):
+                ins.pos=start_pos
+                Clock.schedule_once(_lamb, -1)
+
+            anim.bind(on_complete=_lamb2)
             anim.start(self)
 
         Clock.schedule_once(_lamb, -1)
