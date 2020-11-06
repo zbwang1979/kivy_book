@@ -173,12 +173,10 @@ class Popup_message(Label):
             Logger.debug(f'message texture size{self.texture_size}')
             _x = -(self.width / 2 + self.texture_size[0] / 2) if self.texture_size[0] < self.width else - \
             self.texture_size[0]
-            anim = Animation(x=_x, y=self.pos[1], duration=2)
-            def _lamb2(ins,wid):
-                ins.pos=start_pos
-                Clock.schedule_once(_lamb, -1)
-
-            anim.bind(on_complete=_lamb2)
+            anim1=Animation(x=_x, y=self.pos[1], duration=5)
+            anim2=Animation(x=start_pos[0], y=start_pos[1], duration=0)
+            anim =anim1+anim2
+            anim.repeat=True
             anim.start(self)
 
         Clock.schedule_once(_lamb, -1)
@@ -187,6 +185,10 @@ class Popup_message(Label):
             Clock.schedule_once(lambda dt: self.hide(), timeout)
 
     def hide(self):
+        self.opacity = 0
+        self.disabled = True
+
+    def show(self):
         self.opacity = 0
         self.disabled = True
 
