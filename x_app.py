@@ -45,33 +45,52 @@ class Fetching_title(threading.Thread):
 
 
 class Fetching_txt(threading.Thread):
-    def __init__(self, screen: 'ScreenTwo', container: 'Page_container', start_line_num=0, is_mix=0):
+    def __init__(self, screen: 'ScreenTwo'):
         super(Fetching_txt, self).__init__()
-        self.is_mix = is_mix
         self.screen = screen
-        self.start_line_num = start_line_num
-        self.page_container = container
+        self.messager = None
+        self.current_line_num = 0
+
+
 
     def run(self):
         # Logger.debug(self.screen.screen_container.size)
         check_height = self.screen.page.size[1]
-        new_item = Page_label() if self.is_mix == 0 else Txt_Img()
-        current_line_num = 0
-        self.page_container.add_widget(new_item)
-        self.screen.ready_enent.set()
+        # self.screen.ready_enent.set()
+        ready_event=threading.Event()
+        _new_c=self.screen.page_add_newpage()
+        self.txt_page_process(_new_c,ready_event)
+
+
+    def txt_page_process(self,container: 'Page_container',ready_event:'threading.Event',start_line_num=0, is_mix=0):
+        new_item = Page_label() if is_mix == 0 else Txt_Img()
+        self.current_bind_wid=new_item
+        container.add_widget(new_item)
+        if container.parent == self.screen.page:
+            self.screen.page_count += 1
+        ready_event.set()
+
 
         def _test(inst, vlu):
             Logger.debug(f'readed label height change to {vlu}')
-            if vlu[1] > self.screen.page.size[1] - 100:
+            if vlu[1] > self.screen.page.size[1] - 0.1*self.screen.height:
+                self.current_bind_wid.unbind(texture_size=bind_func)
                 # Clock.schedule_once(lambda dt:self.screen.messager1.display_message(self.screen.messager2.pos, f'载入{len(self.screen.page_list)}页f', timeout=0),
                 #                     0)
-
-                self.screen.messager1.loop_message(self.screen.messager2.pos, f'载入中...', timeout=0)
+                if not bool(self.messager):
+                    self.messager = self.screen.messager1
+                    self.messager.loop_message(self.screen.messager2.pos, f'载入行数{self.current_line_num}...', timeout=0)
+                # return
+                Logger.debug(f'new page from {self.current_line_num}')
+                _new_c = self.screen.page_add_newpage()
+                container=_new_c
+                self.txt_page_process(_new_c,threading.Event(),start_line_num=self.current_line_num)
                 return
 
-            self.screen.ready_enent.set()
 
-        new_item.bind(texture_size=(lambda int, vlu: _test(int, vlu)))
+            ready_event.set()
+        bind_func=lambda int, vlu: _test(int, vlu)
+        self.current_bind_wid.bind(texture_size=bind_func)
 
         with open(self.screen.f_path) as f:
             for line in f:
@@ -79,16 +98,18 @@ class Fetching_txt(threading.Thread):
                     Logger.debug(f'fetching txt stop')
 
                     return
-                current_line_num += 1
-                self.screen.ready_enent.wait()
-                self.screen.ready_enent.clear()
-                if current_line_num <= self.start_line_num:
-                    self.screen.ready_enent.set()
+                ready_event.wait()
+                ready_event.clear()
+                self.current_line_num += 1
+                if self.current_line_num <= start_line_num:
+                    ready_event.set()
                     continue
                 if not bool(line.rsplit()):
-                    self.screen.ready_enent.set()
+                    ready_event.set()
                     continue
-                self.screen.page_add_label(self.page_container, new_item, line)
+                self.screen.page_add_label(container, new_item, line)
+
+
 
         pass
 
@@ -207,13 +228,14 @@ class ScreenTwo(Screen):
     f_path = StringProperty('')
     messager1 = ObjectProperty(None)
     messager2 = ObjectProperty(None)
+    page_count=NumericProperty()
 
     page = ObjectProperty(None)
 
     def __init__(self, **kwargs):
         super(ScreenTwo, self).__init__(**kwargs)
         self.stop_reading_event = threading.Event()
-        self.ready_enent = threading.Event()
+        # self.ready_enent = threading.Event()
         self.page_list = []
         pass
 
@@ -231,19 +253,23 @@ class ScreenTwo(Screen):
             # self.screen_container.add_widget(_p)
         if bool(self.page_list):
             self.page_list.clear()
-        new_page = Page_container()
-        self.page.add_widget(new_page)
-        self.page_list.append(new_page)
-        Fetching_txt(self, new_page).start()
+
+        Fetching_txt(self).start()
         # Clock.schedule_once(partial(_p.test,self.screen_container), -1)
         # Clock.schedule_once(lambda dt: _t.start(), 1)
         pass
 
+    # @mainthread
+    def page_add_newpage(self):
+        new_page_container = Page_container()
+        self.page.add_widget(new_page_container)
+        self.page_list.append(new_page_container)
+        return new_page_container
+
+
     @mainthread
     def page_add_label(self, container: 'Page_container', current_label: 'Page_label', new_txt: str, new_lnum: int = 0):
         current_label.text += new_txt
-
-        self.ready_enent.clear()
 
         # def _aaa():
         #     self.ready_enent.set()
