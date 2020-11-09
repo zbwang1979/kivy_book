@@ -1,0 +1,13 @@
+Image:
+    id:img
+    size_hint_x:0.3
+    size_hint_y:1
+    source:'Hydrangeas.jpg'
+    allow_stretch:True
+Button:
+    id:item_button
+    size_hint_x:0.7
+    size_hint_y:1
+    text:'loading text...'
+    text_size: self.width-10, None
+    on_release: root.parent_screen.onNextScreen('xxxx')
