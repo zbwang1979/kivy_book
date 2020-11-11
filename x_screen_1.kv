@@ -5,8 +5,8 @@
     font_name:'droid.ttf'
 
 <BackgroundColor@Widget>
-    background_color: 0.1, 0, 0, 0
-    canvas.before:
+    background_color: 0, 0, 0, 0.5
+    canvas.after:
         Color:
             rgba: root.background_color
         Rectangle:
@@ -79,11 +79,23 @@
 
 <Page_label@Label>
     markup:True
-    padding:100,10
+    padding:0,10
     pos_hint_x:'center'
     text_size:self.size[0],None
 
 <Page@PageLayout>
+
+<Page_container@BoxLayout>
+    canvas.before:
+        Color:
+            rgba:0.2,0.1,0.6,0
+        Rectangle:
+            size: self.size
+            pos: self.pos
+
+
+
+
 
 
 <ScreenOne>:
@@ -102,39 +114,77 @@
     messager1:messager1
     messager2:messager2
     page:page
+    move_l:move_l
+    move_r:move_r
     FloatLayout:
         padding:0
         spacing:0
         size_hint_x:1
         size_hint_y:1
-        AnchorLayout:
-            anchor_x:'center'
-            anchor_y:'top'
+        FloatLayout:
+            size_hint_y:0.95
+            pos_hint:{'x':0,'y':0.05}
             Page:
+                pos_hint:{'x':0.2,'y':0}
+                size_hint_x:0.6
+                size_hint_y:1
                 id:page
-        Popup_message:
-            size_hint_x:0.9
-            id:messager1
-            halign:'center'
-        Popup_message:
-            bg_alhpa:1
-            text_size:self.size
-            pos_hint:{'x':0.9,'y':0.05}
-            size_hint_x:0.1
-            opacity :1
-            id:messager2
-            halign:'right'
+            BoxLayout:
+                id:move_l
+                pos:self.parent.pos
+                size_hint_x:0.5
+                size_hint_y:1
+                canvas.before:
+                    Color:
+                        rgba: 1,1,0,1
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+                        source:'move.jpg'
+                        tex_coords: 0, 1, 0.5, 1, 0.5, 0.5, 0, 0.5
+            BoxLayout:
+                id:move_r
+                pos:self.parent.size[0]/2,self.parent.pos[1]
+                size_hint_x:0.5
+                size_hint_y:1
+                canvas.before:
+                    Color:
+                        rgba: 1,1,0,1
+                    Rectangle:
+                        size: self.size
+                        pos: self.pos
+                        source:'move.jpg'
+                        tex_coords:  0.5, 1, 1, 1, 1, 0.5, 0.5, 0.5
 
-            text:"{0}/{1}".format(root.page_count,root.page.page+1)
         AnchorLayout:
             anchor_y:'bottom'
-            ActionBar:
-                size_hint_x:1
+            anchor_x:'center'
+            FloatLayout:
                 size_hint_y:0.05
-                ActionView:
-                    ActionPrevious:
-                        with_previous: True
-                        on_release: root.onBackBtn()
+                Popup_message:
+                    size_hint_x:0.9
+                    size_hint_y:1
+                    id:messager1
+                    halign:'center'
+
+                ActionBar:
+                    size_hint_x:1
+                    size_hint_y:1
+                    ActionView:
+                        ActionPrevious:
+                            with_previous: True
+                            on_release: root.onBackBtn()
+                Popup_message:
+                    bg_alhpa:1
+                    text_size:self.size
+                    pos_hint:{'x':0.9,'y':0}
+                    size_hint_x:0.1
+                    size_hint_y:1
+                    opacity :1
+                    id:messager2
+                    halign:'right'
+                    text:"{0}/{1}".format(55,root.page_count)
+
 
 <Manager>:
     id: screen_manager

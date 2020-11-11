@@ -24,6 +24,8 @@ from kivy.uix.widget import Widget
 from functools import partial
 from kivy.animation import Animation
 from kivy.uix.scrollview import ScrollView
+from kivy.graphics.texture import Texture,TextureRegion
+from kivy.core.image import Image as CoreImage
 
 Config.set('kivy', 'log_level', 'debug')
 import threading
@@ -57,68 +59,87 @@ class Fetching_txt(threading.Thread):
         # Logger.debug(self.screen.screen_container.size)
         check_height = self.screen.page.size[1]
         # self.screen.ready_enent.set()
-        ready_event=threading.Event()
-        _new_c=self.screen.page_add_newpage()
-        self.txt_page_process(_new_c,ready_event)
+        self.is_new_page=True
+        self.is_new_mix=False
+        #前一个文字标签
+        self.pre_c:'Label'=None
+        new_c=None
+        self.new_label=None
+        self.exceed_line=''
+        self.current_line=''
 
-
-    def txt_page_process(self,container: 'Page_container',ready_event:'threading.Event',start_line_num=0, is_mix=0):
-        new_item = Page_label() if is_mix == 0 else Txt_Img()
-        self.current_bind_wid=new_item
-        container.add_widget(new_item)
-        if container.parent == self.screen.page:
-            self.screen.page_count += 1
-        ready_event.set()
-
-
-        def _test(inst, vlu):
+        def bind_func(inst, vlu):
             Logger.debug(f'readed label height change to {vlu}')
-            if vlu[1] > self.screen.page.size[1] - 0.1*self.screen.height:
-                self.current_bind_wid.unbind(texture_size=bind_func)
-                # Clock.schedule_once(lambda dt:self.screen.messager1.display_message(self.screen.messager2.pos, f'载入{len(self.screen.page_list)}页f', timeout=0),
-                #                     0)
-                if not bool(self.messager):
-                    self.messager = self.screen.messager1
-                    self.messager.loop_message(self.screen.messager2.pos, f'载入行数{self.current_line_num}...', timeout=0)
-                # return
-                Logger.debug(f'new page from {self.current_line_num}')
-                _new_c = self.screen.page_add_newpage()
-                container=_new_c
-                self.txt_page_process(_new_c,threading.Event(),start_line_num=self.current_line_num)
+            if vlu[1] > (self.screen.page.size[1] - 0.1*self.screen.height):
+                anim1 = Animation(x=-self.screen.move_l.size[0], y=self.screen.move_l.pos[1], duration=5)
+                anim2 = Animation(x=self.screen.size[0], y=self.screen.move_r.pos[1], duration=5)
+
+
+                anim1.start(self.screen.move_l)
+                anim2.start(self.screen.move_r)
                 return
+                # self.exceed_line=self.current_line
+                # self.screen.page_remove_label(new_c, new_label, current_line)
+                #
+                # # Clock.schedule_once(lambda dt:self.screen.messager1.display_message(self.screen.messager2.pos, f'载入{len(self.screen.page_list)}页f', timeout=0),
+                # #                     0)
+                # if not bool(self.messager):
+                #     self.messager = self.screen.messager1
+                #     self.messager.loop_message(self.screen.messager2.pos, f'载入行数{self.current_line_num}...', timeout=0)
+                # else:
+                #     self.messager.text=f'载入行数{self.current_line_num}'
+                #
+                # # return
+                # self.is_new_page=True
+                # self.pre_c=self.new_label
+            self.screen.ready_event.set()
 
-
-            ready_event.set()
-        bind_func=lambda int, vlu: _test(int, vlu)
-        self.current_bind_wid.bind(texture_size=bind_func)
 
         with open(self.screen.f_path) as f:
             for line in f:
                 if self.screen.stop_reading_event.isSet():
                     Logger.debug(f'fetching txt stop')
-
                     return
-                ready_event.wait()
-                ready_event.clear()
                 self.current_line_num += 1
-                if self.current_line_num <= start_line_num:
-                    ready_event.set()
-                    continue
+                if self.is_new_page:
+                    self.is_new_page=False
+                    new_c=self.screen.page_add_newpage()
+                    new_label=Page_label()
+                    new_c.add_widget(new_label)
+                    if bool(self.pre_c):
+                        self.pre_c.unbind(texture_size=bind_func)
+                    new_label.bind(texture_size=bind_func)
+
                 if not bool(line.rsplit()):
-                    ready_event.set()
                     continue
-                self.screen.page_add_label(container, new_item, line)
+                current_line=line
+                if bool(self.exceed_line):
+                    line+=self.exceed_line
+                self.screen.page_add_label(new_c, new_label, line)
+                self.screen.ready_event.wait()
+                self.screen.ready_event.clear()
+"""            FloatLayout:
+                AnchorLayout:
+                    anchor_x:'left'
+                    anchor_y:'top'
 
-
-
-        pass
+                AnchorLayout:
+                    anchor_x:'center'
+                    anchor_y:'top'
+                    Page:
+                        id:page
+                AnchorLayout:
+                    anchor_x:'right'
+                    anchor_y:'top'
+                    size_hint_x:0.2
+"""
 
 
 class Txt_Img(BoxLayout):
     pass
 
 
-class Page(PageLayout):
+class Page(BoxLayout):
     pass
 
 
@@ -152,7 +173,7 @@ class Items_Layout(GridLayout):
     def __init__(self, **kwargs):
         super(Items_Layout, self).__init__(**kwargs)
         try:
-            with os.scandir() as it:
+            with os.scandir(path='./asset') as it:
                 _l = [_it.path for _it in it if bool(_it.is_dir() and re.match(r't_.*', _it.name))]
                 _l.sort(key=os.path.getctime, reverse=True)
                 self._page_list = _l
@@ -177,21 +198,11 @@ class Popup_message(Label):
     def loop_message(self, start_pos, message_txt='messager txt', timeout=2):
         self.text = message_txt
         self.pos = start_pos
-        # def _update_x(ins,vlu):
-        #     ins.text_size[0]=abs(vlu[0]-start_pos[0])
-        #     Logger.debug(f'start from {start_pos} Now pos {vlu[0]}')
-        # self.bind(pos=_update_x)
-        #
-        # self.pos=start_pos
-        # self.messager1.bind(pos=lambda ins,vlu:Logger.debug(ins.pos[1]))
-        #
-        #
-        # self.bind(pos=)
         self.opacity = 1
         self.disabled = False
 
         def _lamb(dt):
-            Logger.debug(f'message texture size{self.texture_size}')
+            # Logger.debug(f'message texture size{self.texture_size}')
             _x = -(self.width / 2 + self.texture_size[0] / 2) if self.texture_size[0] < self.width else - \
             self.texture_size[0]
             anim1=Animation(x=_x, y=self.pos[1], duration=5)
@@ -213,10 +224,7 @@ class Popup_message(Label):
         self.opacity = 0
         self.disabled = True
 
-
 class Page_container(BoxLayout):
-    spacing = 0
-    padding = 0, 0, 0, 0
     pass
 
 
@@ -229,14 +237,18 @@ class ScreenTwo(Screen):
     messager1 = ObjectProperty(None)
     messager2 = ObjectProperty(None)
     page_count=NumericProperty()
-
     page = ObjectProperty(None)
+    move_l=ObjectProperty(None)
+    move_r=ObjectProperty(None)
+
 
     def __init__(self, **kwargs):
         super(ScreenTwo, self).__init__(**kwargs)
         self.stop_reading_event = threading.Event()
+        self.ready_event=threading.Event()
         # self.ready_enent = threading.Event()
         self.page_list = []
+        self.current_pagecontainer=None
         pass
 
     def test_on_enter(self, item_pos):
@@ -247,7 +259,7 @@ class ScreenTwo(Screen):
         if os.path.isfile(_f):
             self.f_path = _f
         else:
-            self.messager.display_message(f'无文件{_f}')
+            self.messager1.(f'无文件{_f}')
             return
             # _p._txt.text=','.join(str(a) for a in range(5))
             # self.screen_container.add_widget(_p)
@@ -259,11 +271,11 @@ class ScreenTwo(Screen):
         # Clock.schedule_once(lambda dt: _t.start(), 1)
         pass
 
-    # @mainthread
     def page_add_newpage(self):
         new_page_container = Page_container()
         self.page.add_widget(new_page_container)
         self.page_list.append(new_page_container)
+        self.page_count=len(self.page_list)
         return new_page_container
 
 
@@ -271,11 +283,13 @@ class ScreenTwo(Screen):
     def page_add_label(self, container: 'Page_container', current_label: 'Page_label', new_txt: str, new_lnum: int = 0):
         current_label.text += new_txt
 
-        # def _aaa():
-        #     self.ready_enent.set()
-        # Clock.schedule_once(lambda dt: _aaa(), -1)
-
         pass
+
+    @mainthread
+    def page_remove_label(self, container: 'Page_container', current_label: 'Page_label', new_txt: str, new_lnum: int = 0):
+        current_label.text = current_label.text.replace(new_txt,'')
+        pass
+
 
     def on_leave(self):
         self.stop_reading_event.set()
