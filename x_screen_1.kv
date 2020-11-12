@@ -142,7 +142,9 @@
                         size: self.size
                         pos: self.pos
                         source:'move.jpg'
-                        tex_coords: 0, 1, 0.5, 1, 0.5, 0.5, 0, 0.5
+                        tex_coords: 0, 1.0, 0.5, 1.0, 0.5, 0.0, 0, 0.0
+                        #tex_coords: 0, 1, 0.5, 1, 0.5, 0.5, 0, 0.5
+                        # tex_coords: 0, 1.0, 1.0, 1.0, 1.0, 0.0, 0, 0.0  #default value
             BoxLayout:
                 id:move_r
                 pos:self.parent.size[0]/2,self.parent.pos[1]
@@ -155,7 +157,9 @@
                         size: self.size
                         pos: self.pos
                         source:'move.jpg'
-                        tex_coords:  0.5, 1, 1, 1, 1, 0.5, 0.5, 0.5
+                        #tex_coords:  0.5, 1, 1, 1, 1, 0.5, 0.5, 0.5
+                        tex_coords: 0.5, 1.0, 1, 1.0, 1, 0.0, 0.5, 0.0
+
 
         AnchorLayout:
             anchor_y:'bottom'
