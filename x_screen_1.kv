@@ -34,7 +34,7 @@
 <Popup_message@Label>
     padding:5,5
     disabled: False
-    font_size:12
+    font_size:20
     size_hint_y:0.04
     canvas.before:
         Color:
@@ -81,20 +81,21 @@
     markup:True
     padding:0,10
     pos_hint_x:'center'
+    size_hint_x:1
     text_size:self.size[0],None
 
-<Page@PageLayout>
+<Page@BoxLayout>
 
 <Page_container@BoxLayout>
+    size_hint_x:0.6
+    size_hint_y:1
+
     canvas.before:
         Color:
             rgba:0.2,0.1,0.6,0
         Rectangle:
             size: self.size
             pos: self.pos
-
-
-
 
 
 

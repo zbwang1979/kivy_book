@@ -6,32 +6,18 @@ from kivy.app import App
 from kivy.uix.screenmanager import ScreenManager, Screen, NoTransition
 from kivy.uix.gridlayout import GridLayout
 from kivy.uix.boxlayout import BoxLayout
-from kivy.uix.pagelayout import PageLayout
-from kivy.uix.anchorlayout import AnchorLayout
 from kivy.uix.label import Label
 from kivy.properties import StringProperty, ObjectProperty, NumericProperty
 from kivy.logger import Logger
 from kivy.config import Config
 from kivy.clock import mainthread
-from kivy.lang import Builder
 from kivy.core.window import Window
-from kivy.core.text import Label as CoreLabel
-from kivy.uix.popup import Popup
 from kivy.clock import Clock
-from kivy.app import App
-from kivy.graphics import Color, RoundedRectangle
-from kivy.uix.widget import Widget
-from functools import partial
 from kivy.animation import Animation
-from kivy.uix.scrollview import ScrollView
-from kivy.graphics.texture import Texture,TextureRegion
-from kivy.core.image import Image as CoreImage
 
 Config.set('kivy', 'log_level', 'debug')
 import threading
-import pickle
-import socket
-import io, os, re
+import os, re
 
 
 class Fetching_title(threading.Thread):
@@ -69,29 +55,29 @@ class Fetching_txt(threading.Thread):
         self.current_line=''
 
         def bind_func(inst, vlu):
-            Logger.debug(f'readed label height change to {vlu}')
+            Logger.debug(f'readed label height change to {vlu} windows size:{self.screen.page.size[1] - 0.1*self.screen.height}')
             if vlu[1] > (self.screen.page.size[1] - 0.1*self.screen.height):
+                inst.unbind(texture_size=bind_func)
                 anim1 = Animation(x=-self.screen.move_l.size[0], y=self.screen.move_l.pos[1], duration=5)
                 anim2 = Animation(x=self.screen.size[0], y=self.screen.move_r.pos[1], duration=5)
 
 
                 anim1.start(self.screen.move_l)
                 anim2.start(self.screen.move_r)
+                self.exceed_line=self.current_line
+                self.screen.page_remove_label(new_c, new_label, current_line)
+
+                # Clock.schedule_once(lambda dt:self.screen.messager1.display_message(self.screen.messager2.pos, f'载入{len(self.screen.page_list)}页f', timeout=0),
+                #                     0)
+                if not bool(self.messager):
+                    self.messager = self.screen.messager1
+                    self.messager.loop_message(self.screen.messager2.pos, f'载入行数{self.current_line_num}...', timeout=0)
+                else:
+                    self.messager.text=f'载入行数{self.current_line_num}'
+                self.is_new_page=True
+                self.pre_c=self.new_label
                 return
-                # self.exceed_line=self.current_line
-                # self.screen.page_remove_label(new_c, new_label, current_line)
-                #
-                # # Clock.schedule_once(lambda dt:self.screen.messager1.display_message(self.screen.messager2.pos, f'载入{len(self.screen.page_list)}页f', timeout=0),
-                # #                     0)
-                # if not bool(self.messager):
-                #     self.messager = self.screen.messager1
-                #     self.messager.loop_message(self.screen.messager2.pos, f'载入行数{self.current_line_num}...', timeout=0)
-                # else:
-                #     self.messager.text=f'载入行数{self.current_line_num}'
-                #
-                # # return
-                # self.is_new_page=True
-                # self.pre_c=self.new_label
+
             self.screen.ready_event.set()
 
 
@@ -106,8 +92,6 @@ class Fetching_txt(threading.Thread):
                     new_c=self.screen.page_add_newpage()
                     new_label=Page_label()
                     new_c.add_widget(new_label)
-                    if bool(self.pre_c):
-                        self.pre_c.unbind(texture_size=bind_func)
                     new_label.bind(texture_size=bind_func)
 
                 if not bool(line.rsplit()):
@@ -118,29 +102,10 @@ class Fetching_txt(threading.Thread):
                 self.screen.page_add_label(new_c, new_label, line)
                 self.screen.ready_event.wait()
                 self.screen.ready_event.clear()
-"""            FloatLayout:
-                AnchorLayout:
-                    anchor_x:'left'
-                    anchor_y:'top'
-
-                AnchorLayout:
-                    anchor_x:'center'
-                    anchor_y:'top'
-                    Page:
-                        id:page
-                AnchorLayout:
-                    anchor_x:'right'
-                    anchor_y:'top'
-                    size_hint_x:0.2
-"""
-
 
 class Txt_Img(BoxLayout):
     pass
 
-
-class Page(BoxLayout):
-    pass
 
 
 class Item_Container(BoxLayout):
@@ -186,6 +151,7 @@ class Items_Layout(GridLayout):
     def setup_items(self):
         Logger.debug('setup screen 1 items')
         for fo in self._page_list:
+            Logger.debug(f'new item path{fo}')
             self.add_widget(Item_Container(fo, self.parent_screen))
 
 
@@ -253,13 +219,13 @@ class ScreenTwo(Screen):
 
     def test_on_enter(self, item_pos):
 
-        _f = os.path.join(item_pos, 'details.txt')
+        _f = os.path.join(item_pos, x_screen_1App.APP_TXT)
         Logger.debug(f'Entering {item_pos}')
         self.stop_reading_event.clear()
         if os.path.isfile(_f):
             self.f_path = _f
         else:
-            self.messager1.(f'无文件{_f}')
+            self.messager1.loop_message(self.messager2.pos,f'无文件{_f}',timeout=0)
             return
             # _p._txt.text=','.join(str(a) for a in range(5))
             # self.screen_container.add_widget(_p)
